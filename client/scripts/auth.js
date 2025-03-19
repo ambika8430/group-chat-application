@@ -22,8 +22,9 @@ document.addEventListener("DOMContentLoaded", function () {
             console.log(data);
 
             if (response.ok) {
-                alert("Sign-up successful! Please log in.");
-                window.location.href = "/";
+                alert("Sign-up successful!");
+                localStorage.setItem("token", data.token); 
+                window.location.href = "/home.html";
             } else {
                 alert("Sign-up failed: " + data.message);
             }
@@ -52,7 +53,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (response.ok) {
                 alert("Sign-in successful!");
-                localStorage.setItem("token", data.token); // Store the token
+                localStorage.setItem("token", data.token); 
                 window.location.href = "/home.html";
             } else {
                 alert("Sign-in failed: " + data.message);
