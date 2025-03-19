@@ -19,7 +19,13 @@ exports.createUser = async (req, res) => {
 
         const token = jwt.sign({ userId: user.id }, "MY_SECRET_KEY", { expiresIn: "1h" });
 
-        res.status(201).json({ message: "User created successfully", token });
+        const data = {
+            token: token,
+            username: user.username,
+            email: user.email
+        }
+
+        res.status(201).json({ message: "User created successfully", data });
     } catch (error) {
         console.log(error)
         res.status(500).json({ error: error.message });
@@ -48,7 +54,13 @@ exports.verifyUser = async (req, res) => {
 
         const token = jwt.sign({ userId: user.id }, "MY_SECRET_KEY", { expiresIn: "1h" });
 
-        res.status(200).json({ message: "Sign-in successful", token });
+        const data = {
+            token: token,
+            username: user.username,
+            email: user.email
+        }
+
+        res.status(200).json({ message: "Sign-in successful", data });
     } catch (error) {
         console.error("Error in verifyUser:", error);
         res.status(500).json({ error: error.message });
