@@ -66,3 +66,13 @@ exports.verifyUser = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+exports.getUser = async (userId) => {
+    try {
+        const user = await User.findByPk(userId);
+        return user
+    } catch (error) {
+        console.log(error)
+        return null
+    }
+};

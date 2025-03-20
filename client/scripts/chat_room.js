@@ -1,13 +1,40 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const socket = io("http://localhost:3000");
+
+    const socket = io("http://localhost:3000", {
+        withCredentials: true,
+        transports: ["websocket"],
+        auth: {
+            token: sessionStorage.getItem("token")
+        }
+    });
+    socket.on("connect", () => {
+        console.log("Connected to WebSocket server:", socket.id);
+    });
+
     const chatBox = document.getElementById("chat-box");
     const messageInput = document.getElementById("message");
 
     const username = sessionStorage.getItem("username");
+    const token = sessionStorage.getItem("token")
+
+    const getAllChats = async() => {
+        try {
+            const res = await fetch(`http://localhost:3000/chat`, {
+                method: "GET",
+                headers: { "Authorization": token }
+            });
+            const data = await res.json()
+            console.log(data)
+            
+        } catch (error) {
+            console.error(error);
+        }
+    }
 
     if (!username) {
         window.location.href = "sign-in.html";
     }else{
+        getAllChats()
         socket.emit('user-joined', username)
     }
 
@@ -30,8 +57,8 @@ document.addEventListener("DOMContentLoaded", function () {
     
     socket.on("message", (data) => {
         const msg = document.createElement("div");
-        msg.classList.add("chat-message", data.user === username ? "user" : "other");
-        msg.innerHTML = `<strong>${data.user}:</strong> ${data.text}`;
+        msg.classList.add("chat-message", data.username === username ? "user" : "other");
+        msg.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
         chatBox.appendChild(msg);
         chatBox.scrollTop = chatBox.scrollHeight;
     });
@@ -41,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const sendMessage = () => {
         const message = messageInput.value.trim();
         if (message !== "") {
-            socket.emit("send-message", { user: username, text: message }); 
+            socket.emit("send-message", message ); 
             messageInput.value = ""; 
         }
     }
