@@ -1,13 +1,15 @@
-const { Chat } = require("../models/association")
+const { Chat } = require("../models/association");
+const { Op } = require("sequelize");
 
-exports.createChat = async (message, userId) => {
-
+exports.createChat = async (message, group_id, user_id, username) => {
+    console.log(message, group_id, user_id, username)
     try {
         const chat = await Chat.create({ 
-            message: message,
-            userId: userId 
+            message,
+            user_id,
+            group_id,
+            username
         });
-
         return chat; 
     } catch (error) {
         console.error("Error creating chat:", error);
@@ -17,36 +19,28 @@ exports.createChat = async (message, userId) => {
 
 exports.getAllChats = async (req, res) => {
     try {
+        const { group_id, lastMessageId } = req.params;
 
-        const chat = await Chat.findAll();
+        if (!group_id) {
+            return res.status(400).json({ error: "Group ID is required" });
+        }
 
-        res.status(201).json({ message: "Chat created successfully", chat });
+        const chatQuery = {
+            where: { group_id },
+            attributes: ["id", "message", "group_id", "user_id", "username", "createdAt"],
+            order: [["id", "DESC"]],
+            limit: 20,
+        };
+
+        if (lastMessageId) {
+            chatQuery.where.id = { [Op.lt]: lastMessageId };
+        }
+
+        const data = await Chat.findAll(chatQuery);
+
+        return res.status(200).json(data);
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ error: error.message });
-    }
-};
-
-exports.getChatByUser = async (req, res) => {
-    try {
-        const userId = req.user.id;
-
-        const chats = await sequelize.query(
-            `
-            SELECT Users.id AS userId, Users.username, Chats.message
-            FROM Chats
-            LEFT JOIN Users ON Chats.userId = Users.id
-            WHERE Chats.userId = :userId
-            `,
-            { 
-                type: QueryTypes.SELECT,
-                replacements: { userId }
-            }
-        );
-
-        res.status(200).json({ message: "Chats retrieved successfully", chats });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
+        console.log("Error fetching all chats:", error);
+        return res.status(500).json({ error: "Server error" });
     }
 };

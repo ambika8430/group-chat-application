@@ -8,18 +8,36 @@ const Chat = sequelize.define('Chat', {
     allowNull: false,
     primaryKey: true
   },
+  group_id: { 
+      type: Sequelize.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Groups",
+        key: "id"
+      },
+      onDelete: "CASCADE"
+  },
+  user_id: { 
+    type: Sequelize.INTEGER,
+    allowNull: false,
+    references: {
+      model: "Users",
+      key: "id"
+    },
+    onDelete: "CASCADE"
+  },
   message: {
     type: Sequelize.STRING,
     allowNull: false
   },
-  userId: { 
-    type: Sequelize.INTEGER,
+  username: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  createdAt: {
+    type: Sequelize.DATE,
     allowNull: false,
-    references: {
-      model: 'Users',
-      key: "id"
-    },
-    onDelete: "CASCADE"
+    defaultValue: Sequelize.literal("CURRENT_TIMESTAMP")
   }
 }, {
   timestamps: false,

@@ -22,7 +22,7 @@ exports.createUser = async (req, res) => {
         const data = {
             token: token,
             username: user.username,
-            email: user.email
+            user_id: user.id
         }
 
         res.status(201).json({ message: "User created successfully", data });
@@ -57,7 +57,7 @@ exports.verifyUser = async (req, res) => {
         const data = {
             token: token,
             username: user.username,
-            email: user.email
+            user_id: user.id
         }
 
         res.status(200).json({ message: "Sign-in successful", data });

@@ -1,46 +1,46 @@
-const { createChat, getAllChats, getChatByUser } = require("../controllers/chat");
+const { createChat } = require("../controllers/chat");
 
 const users = {};
 
 const chatSocket = (io) => {
-    io.on("connection", (socket) => {
-        console.log("New user connected:", socket.user?.id, socket.id);
+    io.on("connection", async (socket) => {
+        console.log("New user connected:", socket.user?.id, socket.user?.username, socket.id);
 
-        const userId = socket.user?.id
-        const username = socket.user?.username
+        const user_id = socket.user?.id;
+        const username = socket.user?.username;
 
-        socket.on("user-joined", (username) => {
-            users[socket.id] = username;
-            io.emit("user-joined", username);
-        });
+        try {
+            // User joins a group chat room
+            socket.on("join-group", (group_id) => {
+                socket.join(group_id);  // Join the room based on group_id
+                console.log(`${username} joined group ${group_id}`);
 
-        socket.on("send-message", async (message) => {
-            try {
-                await createChat(message, userId);
-                io.emit("message", { message, username });
-            } catch (error) {
-                console.error("Error saving message:", error);
-                socket.emit("error", "Message could not be saved");
-            }
-        });
+                // Notify others in the group
+                socket.to(group_id).emit("user-joined", username);
+            });
 
-        socket.on("get-all-chats", async () => {
-            const chats = await getAllChats();
-            socket.emit("all-chats", chats);
-        });
+            // Handle sending messages within a group
+            socket.on("send-message", async ({ message, group_id }) => {
+                console.log("Received message:", { message, group_id });
 
-        socket.on("get-user-chats", async () => {
-            const chats = await getChatByUser(userId);
-            socket.emit("user-chats", chats);
-        });
+                try {
+                    await createChat(message, group_id, user_id, username);
+                    io.to(group_id).emit("message", { message, group_id, user_id, username });
+                } catch (error) {
+                    console.error("Error saving message:", error);
+                    socket.emit("error", "Message could not be saved");
+                }
+            });
 
-        socket.on("disconnect", () => {
-            const username = users[socket.id];
-            if (username) {
-                io.emit("user-left", username);
+            // Handle user disconnection
+            socket.on("disconnect", () => {
+                console.log(`${username} disconnected`);
                 delete users[socket.id];
-            }
-        });
+            });
+        } catch (err) {
+            console.log(err);
+            socket.disconnect();
+        }
     });
 };
 
