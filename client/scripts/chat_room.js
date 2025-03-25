@@ -2,11 +2,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const chatBox = document.getElementById("chat-box");
     const messageInput = document.getElementById("message");
     const user_id  = sessionStorage.getItem("user_id")
+    const newMessageIndicator = document.getElementById("newMessageIndicator");
 
     const group_id = sessionStorage.getItem("group_id")
     const group_name = sessionStorage.getItem("group_name")
-
-    console.log("group id", group_id)
 
     const socket = io("http://localhost:3000", {
         withCredentials: true,
@@ -15,6 +14,15 @@ document.addEventListener("DOMContentLoaded", function () {
             token: sessionStorage.getItem("token")
         }
     });
+
+    function showNewMessageIndicator() {
+        newMessageIndicator.style.display = "block";
+    }
+
+    newMessageIndicator.addEventListener('click',()=>{
+        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: "smooth" });
+        newMessageIndicator.style.display = "none";
+    })
 
     socket.on("connect_error", (err) => {
         console.error("Socket connection error:", err.message);
@@ -25,7 +33,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     socket.on("connect", () => {
-        console.log("Connected to WebSocket server:", socket.id);
 
         socket.emit("join-group", group_id);
 
@@ -37,7 +44,7 @@ document.addEventListener("DOMContentLoaded", function () {
         msg.classList.add("chat-message", "join");
         msg.textContent = `${username} joined the chat`;
         chatBox.appendChild(msg);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        showNewMessageIndicator()
     });
 
     socket.on("user-left", (name) => {
@@ -45,7 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
         msg.classList.add("chat-message", "join");
         msg.textContent = `${name} left the chat`;
         chatBox.appendChild(msg);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        showNewMessageIndicator()
     });
 
     socket.on("message", (data) => {
@@ -55,19 +62,25 @@ document.addEventListener("DOMContentLoaded", function () {
         );
         const msg = document.createElement("div");
         msg.classList.add("chat-message", data.user_id == user_id ? "user" : "other");
-        msg.innerHTML = `<strong>${data.username}:</strong> ${data.message}`;
+        msg.innerHTML = `<strong>${data.username}:</strong> ${message}`;
         chatBox.appendChild(msg);
-        chatBox.scrollTop = chatBox.scrollHeight;
+        if(data.user_id!=user_id){
+            showNewMessageIndicator()
+        }else{
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
     });
 
     const send_message_btn = document.getElementById("send-message")
 
     const sendMessage = () => {
+        console.log({ group_id, message })
         const message = messageInput.value.trim();
         if (message !== "") {
             socket.emit("send-message", { message, group_id } ); 
             messageInput.value = ""; 
         }
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     messageInput.addEventListener("keydown", function (event) {

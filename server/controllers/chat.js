@@ -36,6 +36,8 @@ exports.getAllChats = async (req, res) => {
             chatQuery.where.id = { [Op.lt]: lastMessageId };
         }
 
+        console.log("chatquery",chatQuery)
+
         const data = await Chat.findAll(chatQuery);
 
         return res.status(200).json(data);
