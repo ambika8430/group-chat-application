@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             console.log({ username, email, password })
 
-            const response = await fetch("http://localhost:3000/user/sign-up", {
+            const response = await fetch("http://localhost:3000/api/user/sign-up", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, email, password }),
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const email = document.querySelector(".signin-email").value;
             const password = document.querySelector(".signin-password").value;
 
-            const response = await fetch("http://localhost:3000/user/sign-in", {
+            const response = await fetch("http://localhost:3000/api/user/sign-in", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }),

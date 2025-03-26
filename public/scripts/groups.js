@@ -16,9 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     var tempChats = JSON.parse(localStorage.getItem("chats")) || []; 
 
-    var chatBox = null;
-
     var group_id = null;
+
+    var chatBox = document.getElementById(`chat-box-${group_id}`)
+    
     var group_name = null;
     var lastMessageId = Number.MAX_SAFE_INTEGER 
     let isFetching = false
@@ -32,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (groupName.trim()) {
             try{
-                const response = await fetch("http://localhost:3000/group", {
+                const response = await fetch("http://localhost:3000/api/group", {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
@@ -53,17 +54,47 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function appendMessage(data) {
-        const message = data.message.replace(
-            /(https?:\/\/[^\s]+)/g,
-            '<a href="$1" target="_blank" class="text-primary">$1</a>'
-        );
+        let message = data.message.trim();
+        let fileExtension = message.split('.').pop().toLowerCase();
+    
+        let content = message; // Default: Treat as plain text
+    
+        // Check if message is a URL (for files)
+        if (message.startsWith("http") && message.includes(":")) {
+            content = `<a href="${message}" target="_blank" class="text-primary">${message}</a>`;
+    
+            // Check if it's an image
+            if (["jpg", "jpeg", "png", "gif", "webp"].includes(fileExtension)) {
+                content = `<img src="${message}" alt="Image" style="max-width: 200px; border-radius: 8px;">`;
+            }
+            // Check if it's a video
+            else if (["mp4", "webm", "ogg"].includes(fileExtension)) {
+                content = `<video controls style="max-width: 300px; border-radius: 8px;">
+                              <source src="${message}" type="video/${fileExtension}">
+                              Your browser does not support the video tag.
+                           </video>`;
+            }
+            // Check if it's an audio file
+            else if (["mp3", "wav", "ogg"].includes(fileExtension)) {
+                content = `<audio controls>
+                              <source src="${message}" type="audio/${fileExtension}">
+                              Your browser does not support the audio tag.
+                           </audio>`;
+            }
+            // Check if it's a PDF
+            else if (fileExtension === "pdf") {
+                content = `<iframe src="${message}" style="width: 300px; height: 400px; border-radius: 8px;"></iframe>`;
+            }
+        }
+    
         const msg = document.createElement("div");
         msg.classList.add("chat-message", data.user_id == user_id ? "user" : "other");
-        msg.innerHTML = `<strong>${data.username}:</strong> ${message}`;
+        msg.innerHTML = `<strong>${data.username}:</strong> ${content}`;
+    
         chatBox.prepend(msg);
-        chatBoxCount+=1
+        chatBoxCount += 1;
         chatBox.scrollTop = chatBox.scrollHeight;
-    }
+    }    
 
     function showLoader() {
         topLoader.style.display = "block";
@@ -101,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
         isFetching = true
         showLoader()
         try {
-            const response = await fetch(`http://localhost:3000/group/${group_id}/chat/${lastMessageId}`, {
+            const response = await fetch(`http://localhost:3000/api/group/${group_id}/chat/${lastMessageId}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -167,7 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if(groupList){
         const getGroupsByUser = async() => {
             try{
-                const response = await fetch("http://localhost:3000/group", {
+                const response = await fetch("http://localhost:3000/api/group", {
                     method: "GET",
                     headers: { 
                         "Content-Type": "application/json",
@@ -203,9 +234,14 @@ document.addEventListener("DOMContentLoaded", () => {
         getGroupsByUser()
     }
 
+    document.getElementById("fileInput").addEventListener("change", function() {
+        const fileName = this.files[0] ? this.files[0].name : "No file chosen";
+        document.getElementById("fileName").textContent = fileName;
+    });
+
     const getGroupMembers = async(admin_id) => {
         try{
-            const response1 = await fetch(`http://localhost:3000/group/${group_id}/members`, { 
+            const response1 = await fetch(`http://localhost:3000/api/group/${group_id}/members`, { 
                 method: "GET", 
                 headers: {
                     "Content-Type": "application/json",
@@ -265,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const saveGroupChanges = async(userIds, group_name) => {
 
         try{
-            const response1 = await fetch(`http://localhost:3000/group/${group_id}`, { 
+            const response1 = await fetch(`http://localhost:3000/api/group/${group_id}`, { 
                 method: "PUT", 
                 headers: {
                     "Content-Type": "application/json",
@@ -274,7 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify({ group_name})
             })
 
-            const response2 = await fetch(`http://localhost:3000/group/${group_id}/member`, { 
+            const response2 = await fetch(`http://localhost:3000/api/group/${group_id}/member`, { 
                 method: "PUT", 
                 headers: {
                     "Content-Type": "application/json",
@@ -320,7 +356,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const showAdminButton = async(group_id) => {
         try{
-            const response2 = await fetch(`http://localhost:3000/group/${group_id}/admin`, { 
+            const response2 = await fetch(`http://localhost:3000/api/group/${group_id}/admin`, { 
                 method: "GET", 
                 headers: {
                     "Content-Type": "application/json",
@@ -375,7 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await showAdminButton(group_id)
         }
     })
-
+    
     chatBox.addEventListener("scroll", async () => {
         if (isFetching) return;
     
@@ -402,7 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });  
 
     inviteButton.addEventListener('click', ()=>{
-        const inviteLink = `http://localhost:3000/invite/group/${group_id}`;
+        const inviteLink = `http://localhost:3000/api/invite/group/${group_id}`;
             navigator.clipboard.writeText(inviteLink).then(() => {
                 alert("Invite link copied to clipboard!");
         });
@@ -410,7 +446,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const joinGroup = async(group_id) => {
         try{
-            const response = await fetch(`http://localhost:3000/invite/group/${group_id}`, { 
+            const response = await fetch(`http://localhost:3000/api/invite/group/${group_id}`, { 
                 method: "POST", 
                 headers: {
                     "Content-Type": "application/json",
@@ -461,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     inviteUrl.pathname.includes("/group")
                 ) {
                     event.preventDefault(); // Prevent navigation
-                    const group_id = inviteUrl.pathname.split("/")[3]; // Extract Group ID
+                    const group_id = inviteUrl.pathname.split("/")[4]; // Extract Group ID
                     showInviteModal(group_id);
                 }
             }
@@ -470,7 +506,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     deleteGroupBtn.addEventListener('click', async()=>{
         try{
-            const response = await fetch(`http://localhost:3000/group/${group_id}`, { 
+            const response = await fetch(`http://localhost:3000/api/group/${group_id}`, { 
                 method: "DELETE", 
                 headers: {
                     "Content-Type": "application/json",

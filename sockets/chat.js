@@ -32,6 +32,18 @@ const chatSocket = (io) => {
                 }
             });
 
+            socket.on("send-file", async ({ fileUrl, fileName, group_id }) => {
+                console.log("Received file request:", { fileUrl, fileName, group_id });
+
+                try {
+                    await createChat(fileUrl, group_id, user_id, username);
+                    io.to(group_id).emit("receive-file", { fileUrl, fileName, group_id, user_id, username });
+                } catch (error) {
+                    console.error("Error saving message:", error);
+                    socket.emit("error", "Message could not be saved");
+                }
+            });            
+
             // Handle user disconnection
             socket.on("disconnect", () => {
                 console.log(`${username} disconnected`);
